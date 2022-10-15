@@ -1,9 +1,9 @@
 ; Lê dois números inteiros, subtrai e exibe o resultado.
 ;
 READ X 
-READ Y 
+READ Y ;teste de comentario
 LOAD X 
-SUB Y 
+SUB Y ; teste numero 2
 STORE Z 
 WRITE Z 
 HALT

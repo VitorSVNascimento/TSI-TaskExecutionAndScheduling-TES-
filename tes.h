@@ -123,6 +123,8 @@ typedef struct  {
 	ErroExecucao erroExecucao;
 } MaquinaExecucao;
 
+//Define o tamanho maximo da string digitada no prompt tes>
+#define TAMANHO_PROMPT TAMANHO_NOME_ARQUIVO * NUMERO_MAXIMO_DE_PROGRAMAS + 4
 int exibirTes(const char *tes);
 int inicializaTes();
 int lerString(char *str,int tamStr);
@@ -130,4 +132,4 @@ void retiraN(char *str);
 int abrirArquivo(char *nomeArq,FILE **arq);
 int montarPrograma(Programa *programa,char *nomePrograma);
 //Retorna o numero de instruções lidas pelo arquivo
-//int lerArquivoLPAS(Instrucao *instrucoes[TAMANHO_INSTRUCAO],FILE *arquivo);
+unsigned short lerArquivoLPAS(Instrucao instrucoes[TAMANHO_INSTRUCAO],FILE *arquivo);

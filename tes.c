@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tes.h"
-#define TAMANHO_PROMPT TAMANHO_NOME_ARQUIVO * NUMERO_MAXIMO_DE_PROGRAMAS + 4
+
 int exibirTes(const char *tes){
     const char *COMANDO_SAIDA = "exit"; 
     int sair = 0,erro,numArq;
@@ -80,19 +80,34 @@ int montarPrograma(Programa *programa,char *nomePrograma){
     strcpy(programa->nome,nomePrograma);
 
     printf("\nPrograma %s aberto com sucesso",programa->nome);
-    return 1;
-    
-    //programa->numeroDeInstrucoes = lerArquivoLPAS(programa->instrucoes,arquivo);
-    //for(int k=0;k<programa->numeroDeInstrucoes;k++)
-    //printf("\nInstrução %d = %s",programa->instrucoes[k]);
+
+     programa->numeroDeInstrucoes = lerArquivoLPAS(programa->instrucoes,arquivo);
+    for(int k=0;k<programa->numeroDeInstrucoes;k++)
+    printf("\nInstrução %d = %s",k,programa->instrucoes[k]);
     fclose(arquivo);
+    return 1;
 }
 
-// int lerArquivoLPAS(Instrucao *instrucoes[TAMANHO_INSTRUCAO],FILE *arquivo){
-//     int i;
-//     while (fgets(instrucoes[i],TAMANHO_INSTRUCAO,arquivo))
-//         i++;
-    
-//     return i;
-
-// }
+unsigned short lerArquivoLPAS(Instrucao instrucoes[NUMERO_MAXIMO_DE_INSTRUCOES],FILE *arquivo){
+    int i=0,k=0;
+    char c;
+    printf("\nAntes do primeiro while");
+    while((c = getc(arquivo))!=EOF){
+        if(c == ';'){
+            while (getc(arquivo)!='\n');
+            if(k>0)
+                i++;
+            k=0;
+            
+        }else if(c!='\n'){
+            instrucoes[i][k] = c;
+            k++;
+        }else if(c=='\n'){
+            instrucoes[i][k] = '\0';
+            i++;
+            k=0;
+        }
+        
+    }
+    return i;
+}
