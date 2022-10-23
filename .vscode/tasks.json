@@ -2,17 +2,17 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: gcc arquivo de build ativo",
-            "command": "C:\\usr\\bin\\gcc",
+            "label": "C/C++: gcc-9 arquivo de build ativo",
+            "command": "/usr/bin/gcc-9",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "options": {
-                "cwd": "C:\\usr\\bin"
+                "cwd": "${fileDirname}"
             },
             "problemMatcher": [
                 "$gcc"

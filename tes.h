@@ -100,6 +100,9 @@ typedef struct {
 
 	// Indica o tempo total das operações de E/S executadas pela tarefa, nesta implementação, o tempo total de E/S apenas das instruções READ. 
 	unsigned char tempoES;
+	
+	//identifica o nome das variaveis
+	char nomeVariaveis[NUMERO_MAXIMO_DE_VARIAVEIS][TAMANHO_INSTRUCAO];
 } DescritorTarefa;
 
 // Representa a estrutura da máquina de execução LPAS.
@@ -119,8 +122,7 @@ typedef struct  {
 	// Memória de dados que armazena as variáveis do programa LPAS que está em execução na ME.
 	int variaveis[NUMERO_MAXIMO_DE_VARIAVEIS];
 
-	//identifica o nome das variaveis
-	char nomeVariaveis[NUMERO_MAXIMO_DE_VARIAVEIS][TAMANHO_INSTRUCAO];
+
 
 	// Identifica a instrução, o número da linha e o nome do programa onde o erro de execução ocorreu.
 	ErroExecucao erroExecucao;
@@ -131,13 +133,17 @@ typedef struct  {
 
 #define COMENTARIO ';'
 #define FIM_DE_LINHA '\n'
+#define NUMERO_MAXIMO_DE_EXECUCOES NUMERO_MAXIMO_DE_PROGRAMAS/2
 
 int exibirTes(const char *tes);
 int inicializaTes();
 int lerString(char *str,int tamStr);
+void gerarTarefas(int *numArq,Tarefa tarefas[], char *linhaComandoTes);
 void retiraN(char *str);
 int abrirArquivo(char *nomeArq,FILE **arq);
 int montarPrograma(Programa *programa,char *nomePrograma);
 //Retorna o numero de instruções lidas pelo arquivo
 unsigned short lerArquivoLPAS(Instrucao instrucoes[TAMANHO_INSTRUCAO],FILE *arquivo);
 pid_t criarProcesso();
+int executarTarefas(Tarefa tarefas[],int numTarefas);
+void inicializaDescritorDeTarefa(DescritorTarefa *df,Tarefa *tarefa);

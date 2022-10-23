@@ -1,53 +1,58 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h> // Requerido por fork, getpid e getppid.
-#include <sys/wait.h> // Requerido por wait.
+#include <unistd.h> 
+#include <sys/wait.h> 
 #include "tes.h"
 
 int exibirTes(const char *tes){
     const char *COMANDO_SAIDA = "exit"; 
-    int sair = 0,erro,tam,numArq;
+    int numArq,numTarefas;
     pid_t pid1,pid2,pp;
-    char linhaComandoTes[TAMANHO_PROMPT],*tokens;
+    char linhaComandoTes[TAMANHO_PROMPT];
     Tarefa tarefas[NUMERO_MAXIMO_DE_PROGRAMAS];
-    while (!sair){
+    while (1){
         pid2=-1;
         printf("\n%s",tes);
-        tam = lerString(linhaComandoTes,TAMANHO_PROMPT);
-        if(tam!=0){
-            if(!strcmp(linhaComandoTes,COMANDO_SAIDA))
-                sair = 1;
-            else{
-                tokens = strtok(linhaComandoTes," ");    
-                numArq=0;
-                //loop que passa passa por cada arquivo informado carregando ele para a memória        
-                while (tokens != NULL){
-                    if(numArq >= NUMERO_MAXIMO_DE_PROGRAMAS){
-                        printf("\nNumero maximo de programas carregados");
-                        break;
-                    }
-                    erro = montarPrograma(&tarefas[numArq].programa, tokens);
-                    if(erro){
-                        tarefas[numArq].identificador = numArq+1;
-                        numArq++;
-                    }
-                    
-                    tokens = strtok(NULL," ");
-                }
+        if(lerString(linhaComandoTes,TAMANHO_PROMPT)==0)
+            continue;
+        if(!strcmp(linhaComandoTes,COMANDO_SAIDA))
+            break;
+            //loop que passa passa por cada arquivo informado carregando ele para a memória    
+        gerarTarefas(&numArq,tarefas,linhaComandoTes);    
+        if(numArq>0){
+                            // cria os processos do fork
+            pp = criarProcesso();
+            pid1 = getpid();
+            //cria o primeiro processo e verifica se é necessario criar o segundo
+            if(pp!=0 && numArq > NUMERO_MAXIMO_DE_EXECUCOES){
                 pp = criarProcesso();
-                pid1 = getpid();
-                if(pp!=0 && numArq > 2){
-                    pp = criarProcesso();
-                    pid2 = getpid();
+                pid2 = getpid();
+            }
+
+            if(pp!=0){
+                wait(&pp);
+                if(pid2!=-1)
+                wait(&pp);
+            }else{
+                pp = getpid();
+                if(pp == pid1){
+                    if(numArq >= NUMERO_MAXIMO_DE_EXECUCOES)
+                        numTarefas = NUMERO_MAXIMO_DE_EXECUCOES;
+                    else
+                        numTarefas = 1;
+                    executarTarefas(tarefas,numTarefas);
                 }
 
-                if(pp==pid1 && pp!=0){
-                
+                if(pp == pid2){
+                    numTarefas = numArq - NUMERO_MAXIMO_DE_EXECUCOES;
+                    executarTarefas(tarefas+NUMERO_MAXIMO_DE_EXECUCOES,numTarefas);
                 }
-
             }
         }
+
+        
+        
     }
 
     return EXIT_SUCCESS;
@@ -69,6 +74,28 @@ int lerString(char *str,int tamStr){
     setbuf(stdin,NULL);
     retiraN(str);
     return strlen(str);
+}
+
+void gerarTarefas(int *numArq,Tarefa tarefas[], char *linhaComandoTes){
+    char *tokens;
+    int sucesso;
+    unsigned int num;
+    tokens = strtok(linhaComandoTes," ");    
+    num=0;
+    while (tokens != NULL){
+        if(num >= NUMERO_MAXIMO_DE_PROGRAMAS){
+            printf("\nNumero maximo de programas carregados\n");
+            break;
+        }
+        sucesso = montarPrograma(&tarefas[num].programa, tokens);
+        if(sucesso){
+            tarefas[num].identificador = num+1;
+            num++;
+        }
+        
+        tokens = strtok(NULL," ");
+    }
+    *numArq=num;
 }
 
 void retiraN(char *str){
@@ -101,9 +128,6 @@ int montarPrograma(Programa *programa,char *nomePrograma){
     strcpy(programa->nome,nomePrograma);
     programa->numeroDeInstrucoes = lerArquivoLPAS(programa->instrucoes,arquivo);
 
-    for(int i=0;i<programa->numeroDeInstrucoes;i++)
-        printf("INSTRUÇÃO %d = %s",i,programa->instrucoes[i]);
-
     fclose(arquivo);
     return 1;
 }
@@ -135,7 +159,6 @@ unsigned short lerArquivoLPAS(Instrucao instrucoes[NUMERO_MAXIMO_DE_INSTRUCOES],
     else if(k>TAMANHO_INSTRUCAO-1)
         instrucoes[i][TAMANHO_INSTRUCAO-1] = '\0';
 
-    printf("\nValor de I = %d",i);
     return i+1;
 }
 
@@ -149,4 +172,26 @@ pid_t criarProcesso() {
 		exit(EXIT_FAILURE);
 	}
 	return pid;
+}
+
+int executarTarefas(Tarefa tarefas[],int numTarefas){
+    MaquinaExecucao me;
+    for(int i = 0 ; i < numTarefas ; i++)
+        inicializaDescritorDeTarefa(&me.df[i],&tarefas[i]);
+    
+    for(int i = 0 ; i<numTarefas; i++){
+        printf("\nValor da tarefa = %d",me.df[i].tarefa.identificador);
+        printf("\nEstado = %d",me.df[i].estado);
+    }
+    exit(EXIT_SUCCESS);
+}
+
+void inicializaDescritorDeTarefa(DescritorTarefa *df,Tarefa *tarefa){
+
+    df->tarefa = *tarefa;
+    df->pc = 0;
+    df->tempoCPU = 0;
+    df->tempoES = 0;
+    df->estado = PRONTA;
+
 }
