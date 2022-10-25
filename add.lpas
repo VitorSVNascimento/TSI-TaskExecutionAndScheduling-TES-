@@ -1,9 +1,9 @@
 ; Lê dois números inteiros, soma e exibe o resultado.
 ;
-READ X
+READ X 
 READ Y
-LOAD X 
+LOAD X
 ADD Y 
 STORE Z 
-WRITE Z 
+WRITE Z
 HALT 

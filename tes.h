@@ -84,6 +84,12 @@ typedef struct {
 	Programa programa;
 } Tarefa;
 
+//Representa uma variavel
+typedef struct {
+	char nomeVariavel[TAMANHO_INSTRUCAO];
+	int valorVariavel;
+} Variavel;
+
 // Representa o descritor da tarefa, conhecido como bloco de controle da tarefa (TCB - Task Control Block).
 typedef struct {
 	// Identificação da tarefa deste bloco de controle da tarefa.
@@ -101,8 +107,13 @@ typedef struct {
 	// Indica o tempo total das operações de E/S executadas pela tarefa, nesta implementação, o tempo total de E/S apenas das instruções READ. 
 	unsigned char tempoES;
 	
-	//identifica o nome das variaveis
-	char nomeVariaveis[NUMERO_MAXIMO_DE_VARIAVEIS][TAMANHO_INSTRUCAO];
+	//identifica as variaveis de uma tarefa
+	Variavel variaveisTarefa[NUMERO_MAXIMO_DE_VARIAVEIS];
+
+	//Guarda o valor do registrador no momento da troca de contexto
+	int valorRegistrador;
+
+	int numVariavel;
 } DescritorTarefa;
 
 // Representa a estrutura da máquina de execução LPAS.
@@ -122,11 +133,10 @@ typedef struct  {
 	// Memória de dados que armazena as variáveis do programa LPAS que está em execução na ME.
 	int variaveis[NUMERO_MAXIMO_DE_VARIAVEIS];
 
-
-
 	// Identifica a instrução, o número da linha e o nome do programa onde o erro de execução ocorreu.
 	ErroExecucao erroExecucao;
 } MaquinaExecucao;
+
 
 //Define o tamanho maximo da string digitada no prompt tes>
 #define TAMANHO_PROMPT TAMANHO_NOME_ARQUIVO * NUMERO_MAXIMO_DE_PROGRAMAS + 4
@@ -147,3 +157,17 @@ unsigned short lerArquivoLPAS(Instrucao instrucoes[TAMANHO_INSTRUCAO],FILE *arqu
 pid_t criarProcesso();
 int executarTarefas(Tarefa tarefas[],int numTarefas);
 void inicializaDescritorDeTarefa(DescritorTarefa *df,Tarefa *tarefa);
+int decodificaInstrucao(Instrucao instrucao,char nomeVar[TAMANHO_INSTRUCAO]);
+int executarInstrucao(int cod,char nomeVar[TAMANHO_INSTRUCAO],MaquinaExecucao *me);
+int verificaVariavel(char nomeVar[TAMANHO_INSTRUCAO],Variavel variavies[NUMERO_MAXIMO_DE_VARIAVEIS],int tam);
+int criarVariavel(char nomeVar[TAMANHO_INSTRUCAO],DescritorTarefa *df);
+int funcaoReadLpas();
+void funcaoWriteLpas(int valor);
+void funcaoAddLpas(int *registrador,int valor);
+void funcaoLoadLpas(int *registrador,int valor);
+void funcaoStoreLpas(int *variavel, int registrador);
+void funcaoAddLpas(int *registrador,int valor);
+void funcaoSubLpas(int *registrador,int valor);
+void funcaoMulLpas(int *registrador,int valor);
+void funcaoDivLpas(int *registrador,int valor);
+void printaErro(char *nomePrograma,int erro);
