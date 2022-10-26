@@ -26,14 +26,13 @@ int exibirTes(const char *tes){
             pid1 = getpid();
             //cria o primeiro processo e verifica se é necessario criar o segundo
             if(pidAtual!=0 && numArq > NUMERO_MAXIMO_DE_EXECUCOES){
+                wait(&teste);
                 pidAtual = criarProcesso();
                 pid2 = getpid();
             }
 
             if(pidAtual!=0){
                 wait(&teste);
-                if(pid2!=-1)
-                    wait(&teste);
             }else{
                 pidAtual = getpid();
                 if(pidAtual == pid1){
@@ -195,6 +194,13 @@ int executarTarefas(Tarefa tarefas[],int numTarefas){
                     escalonarTarefas(&me);
                 break;
             }
+            if(cod==ARGUMENTO_INSTRUCAO_LPAS_AUSENTE){
+                printaErro(me.df[0].tarefa.programa.nome,cod);
+                finalizaTarefa(&me);
+                if(me.numeroDeProgramas>0)
+                    escalonarTarefas(&me);
+                break;  
+            }
             erro = executarInstrucao(cod,nomeVar,&me);
             me.df[0].pc++;
             if(erro){
@@ -214,7 +220,7 @@ int executarTarefas(Tarefa tarefas[],int numTarefas){
             escalonarTarefas(&me);
 
     }
-    
+    printf("\nCheguei aqui");
     exit(EXIT_SUCCESS);
 }
 
@@ -236,7 +242,12 @@ int decodificaInstrucao(Instrucao instrucao,char nomeVar[TAMANHO_INSTRUCAO]){
     strcpy(aux,instrucao);
     tokens = strtok(aux," ");  
     strcpy(nomeInstrucao,tokens);
+    if(strcmp(nomeInstrucao,"HALT")==0)
+        return HALT;
+
     tokens = strtok(NULL," "); 
+    if(!tokens)
+        return ARGUMENTO_INSTRUCAO_LPAS_AUSENTE;
     strcpy(nomeVar,tokens); 
     tokens = strtok(NULL," "); 
     if(tokens!=NULL)
@@ -341,9 +352,12 @@ int executarInstrucao(int cod,char nomeVar[TAMANHO_INSTRUCAO],MaquinaExecucao *m
             funcaoDivLpas(&me->registrador,expressao);
         }else{
             existe = verificaVariavel(nomeVar,me->df[0].variaveisTarefa,me->df[0].numVariavel);
-            if(existe!=-1)
-                funcaoDivLpas(&me->registrador,me->variaveis[existe]);
-            else
+            if(existe!=-1){
+                if(me->variaveis[existe]!=0)
+                    funcaoDivLpas(&me->registrador,me->variaveis[existe]);
+                else
+                    return ARGUMENTO_INSTRUCAO_LPAS_INVALIDO;   
+            }else
                 return ARGUMENTO_INSTRUCAO_LPAS_INVALIDO;
         } 
         break;
