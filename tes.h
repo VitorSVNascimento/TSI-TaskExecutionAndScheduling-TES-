@@ -171,3 +171,6 @@ void funcaoSubLpas(int *registrador,int valor);
 void funcaoMulLpas(int *registrador,int valor);
 void funcaoDivLpas(int *registrador,int valor);
 void printaErro(char *nomePrograma,int erro);
+void finalizaTarefa(MaquinaExecucao *me);
+int temFila(MaquinaExecucao *me);
+int escalonarTarefas(MaquinaExecucao *me);

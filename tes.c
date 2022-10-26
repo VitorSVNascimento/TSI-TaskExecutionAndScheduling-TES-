@@ -179,22 +179,40 @@ pid_t criarProcesso() {
 int executarTarefas(Tarefa tarefas[],int numTarefas){
     
     MaquinaExecucao me;
-    int cod,erro;
+    int cod,erro,fatiaTempo;
     char nomeVar[TAMANHO_INSTRUCAO];
     me.numeroDeProgramas = numTarefas;
     for(int i = 0 ; i < me.numeroDeProgramas ; i++)
         inicializaDescritorDeTarefa(&me.df[i],&tarefas[i]);
 
+    me.df[0].estado = EXECUTANDO;
     while (me.numeroDeProgramas > 0){
-        for (me.df->pc = 0 ; me.df->pc < me.df[0].tarefa.programa.numeroDeInstrucoes; me.df->pc++){
+        for (fatiaTempo = 2 ; fatiaTempo > 0 ; fatiaTempo--){
             cod = decodificaInstrucao(me.df[0].tarefa.programa.instrucoes[me.df[0].pc],nomeVar);
-            if(cod==HALT)
+            if(cod==HALT){
+                finalizaTarefa(&me);
+                if(me.numeroDeProgramas>0)
+                    escalonarTarefas(&me);
                 break;
+            }
             erro = executarInstrucao(cod,nomeVar,&me);
-            if(erro)
+            me.df[0].pc++;
+            if(erro){
                 printaErro(me.df[0].tarefa.programa.nome,erro);
+                finalizaTarefa(&me);
+                if(me.numeroDeProgramas>0)
+                    escalonarTarefas(&me);
+                break;
+            }
         }
-        break;
+        if(me.df[0].pc > me.df[0].tarefa.programa.numeroDeInstrucoes){
+            finalizaTarefa(&me);
+            escalonarTarefas(&me);
+        }
+
+        if(me.df[0].estado!=TERMINADA && temFila(&me))
+            escalonarTarefas(&me);
+
     }
     
     exit(EXIT_SUCCESS);
@@ -360,7 +378,6 @@ void printaErro(char *nomePrograma,int erro){
 }
 
 int verificaVariavel(char nomeVar[TAMANHO_INSTRUCAO],Variavel variavies[NUMERO_MAXIMO_DE_VARIAVEIS],int tam){
-
     for(int i = 0; i < tam ; i++)
         if(!strcmp(nomeVar,variavies[i].nomeVariavel))
             return i;
@@ -412,4 +429,42 @@ void funcaoMulLpas(int *registrador,int valor){
 void funcaoDivLpas(int *registrador,int valor){
     *registrador /= valor;
     return;
+}
+
+void finalizaTarefa(MaquinaExecucao *me){
+    me->df[0].estado = TERMINADA;
+    me->numeroDeProgramas--;
+    return;
+}
+
+int temFila(MaquinaExecucao *me){
+    if(me->numeroDeProgramas < 2)
+        return 0;
+    
+    if(me->df[1].estado==TERMINADA)
+        return 0;
+    
+    return 1;
+}
+
+int escalonarTarefas(MaquinaExecucao *me){
+    int i = 0;
+    if(me->numeroDeProgramas < 2)
+        return 0;
+    
+    DescritorTarefa aux;
+    //Salvando o contexto da tarefa 1
+    me->df[0].valorRegistrador = me->registrador;
+    for(i = 0; i < me->df[0].numVariavel ; i++)
+        me->df[0].variaveisTarefa[i].valorVariavel = me->variaveis[i];
+    me->df[0].estado = PRONTA;
+    aux = me->df[0];
+    //Passando a segunda posição para a primeria possição
+    me->df[0] = me->df[1];
+    me->registrador = me->df[0].valorRegistrador;
+    for(i = 0; i < me->df[0].numVariavel ; i++)
+    me->variaveis[i] = me->df[0].variaveisTarefa[i].valorVariavel;
+    me->df[1] = aux;
+    me->df[0].estado = EXECUTANDO;
+    return 1;
 }
