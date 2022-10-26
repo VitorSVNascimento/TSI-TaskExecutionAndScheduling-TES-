@@ -40,12 +40,12 @@ int exibirTes(const char *tes){
                         numTarefas = NUMERO_MAXIMO_DE_EXECUCOES;
                     else
                     numTarefas = 1;
-                    executarTarefas(tarefas,numTarefas);
+                    executarTarefas(tarefas,numTarefas,"tes1");
                 }
 
                 if(pidAtual == pid2){
                     numTarefas = numArq - NUMERO_MAXIMO_DE_EXECUCOES;
-                    executarTarefas(tarefas+NUMERO_MAXIMO_DE_EXECUCOES,numTarefas);
+                    executarTarefas(tarefas+NUMERO_MAXIMO_DE_EXECUCOES,numTarefas,"tes2");
                 }
             }
         }
@@ -175,7 +175,7 @@ pid_t criarProcesso() {
 	return pid;
 }
 
-int executarTarefas(Tarefa tarefas[],int numTarefas){
+int executarTarefas(Tarefa tarefas[],int numTarefas,char *nomeProcesso){
     
     MaquinaExecucao me;
     int cod,erro,fatiaTempo;
@@ -189,38 +189,55 @@ int executarTarefas(Tarefa tarefas[],int numTarefas){
         for (fatiaTempo = 2 ; fatiaTempo > 0 ; fatiaTempo--){
             cod = decodificaInstrucao(me.df[0].tarefa.programa.instrucoes[me.df[0].pc],nomeVar);
             if(cod==HALT){
+                me.df[0].tempoCPU++;
                 finalizaTarefa(&me);
-                if(me.numeroDeProgramas>0)
-                    escalonarTarefas(&me);
+                if(me.numeroDeProgramas>0){
+                    escalonarTarefas(&me,numTarefas);
+                    me.df[1].estado=TERMINADA;
+                }
                 break;
             }
             if(cod==ARGUMENTO_INSTRUCAO_LPAS_AUSENTE){
                 printaErro(me.df[0].tarefa.programa.nome,cod);
                 finalizaTarefa(&me);
-                if(me.numeroDeProgramas>0)
-                    escalonarTarefas(&me);
+                if(me.numeroDeProgramas>0){
+                    escalonarTarefas(&me,numTarefas);
+                    me.df[1].estado=TERMINADA;
+                }
                 break;  
             }
             erro = executarInstrucao(cod,nomeVar,&me);
             me.df[0].pc++;
+            me.df[0].tempoCPU++;
             if(erro){
                 printaErro(me.df[0].tarefa.programa.nome,erro);
                 finalizaTarefa(&me);
-                if(me.numeroDeProgramas>0)
-                    escalonarTarefas(&me);
+                if(me.numeroDeProgramas>0){
+                    escalonarTarefas(&me,numTarefas);
+                    me.df[1].estado=TERMINADA;
+                }
                 break;
+            }
+            if(cod==READ){
+                me.df[0].tempoES+=3;
+                if(temFila(&me,numTarefas)){
+                    me.df[0].estado=SUSPENSA;
+                    break;
+                }
+
             }
         }
         if(me.df[0].pc > me.df[0].tarefa.programa.numeroDeInstrucoes){
             finalizaTarefa(&me);
-            escalonarTarefas(&me);
+            escalonarTarefas(&me,numTarefas);
         }
 
-        if(me.df[0].estado!=TERMINADA && temFila(&me))
-            escalonarTarefas(&me);
+        if(me.df[0].estado!=TERMINADA && temFila(&me,numTarefas))
+            escalonarTarefas(&me,numTarefas);
 
     }
-    printf("\nCheguei aqui");
+    me.numeroDeProgramas = numTarefas;
+    printaRelatorio(me,nomeProcesso);
     exit(EXIT_SUCCESS);
 }
 
@@ -366,7 +383,7 @@ int executarInstrucao(int cod,char nomeVar[TAMANHO_INSTRUCAO],MaquinaExecucao *m
         break;
     }
 
-    return 0;
+    return EXECUCAO_BEM_SUCEDIDA;
 }
 
 void printaErro(char *nomePrograma,int erro){
@@ -451,8 +468,8 @@ void finalizaTarefa(MaquinaExecucao *me){
     return;
 }
 
-int temFila(MaquinaExecucao *me){
-    if(me->numeroDeProgramas < 2)
+int temFila(MaquinaExecucao *me,int numTarefas){
+    if(numTarefas < 2)
         return 0;
     
     if(me->df[1].estado==TERMINADA)
@@ -461,9 +478,9 @@ int temFila(MaquinaExecucao *me){
     return 1;
 }
 
-int escalonarTarefas(MaquinaExecucao *me){
+int escalonarTarefas(MaquinaExecucao *me,int numTarefas){
     int i = 0;
-    if(me->numeroDeProgramas < 2)
+    if(!temFila(me,numTarefas))
         return 0;
     
     DescritorTarefa aux;
@@ -481,4 +498,24 @@ int escalonarTarefas(MaquinaExecucao *me){
     me->df[1] = aux;
     me->df[0].estado = EXECUTANDO;
     return 1;
+}
+
+void printaRelatorio(MaquinaExecucao me,char *nomeProcesso){
+    float tempoTotalCPU=0;
+
+    for(int i=0 ; i<me.numeroDeProgramas ; i++)
+        tempoTotalCPU += me.df[i].tempoCPU;
+    
+    printf("\nProcesso: %s\n",nomeProcesso);
+    for(int i=0; i< me.numeroDeProgramas;i++){
+        printf("\n\n\t-Tarefa: %s.lpas",me.df[i].tarefa.programa.nome);
+        printf("\n\tTempo de CPU = ut%d",me.df[i].tempoCPU);
+        printf("\n\tTempo de E/S = ut%d",me.df[i].tempoES);
+        printf("\n\tTaxa de ocupação da CPU = %.2f %%\n",me.df[i].tempoCPU * 100 / tempoTotalCPU);
+    }
+
+    printf("\n\t-Round-Robin");
+    printf("\n\tTempo médio de execução = ut");
+    printf("\n\tTempo médio de espera = ut");
+
 }

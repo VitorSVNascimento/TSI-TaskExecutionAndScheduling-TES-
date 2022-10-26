@@ -107,6 +107,7 @@ typedef struct {
 	// Indica o tempo total das operações de E/S executadas pela tarefa, nesta implementação, o tempo total de E/S apenas das instruções READ. 
 	unsigned char tempoES;
 	
+	unsigned char tempoEspera;
 	//identifica as variaveis de uma tarefa
 	Variavel variaveisTarefa[NUMERO_MAXIMO_DE_VARIAVEIS];
 
@@ -152,25 +153,40 @@ void gerarTarefas(int *numArq,Tarefa tarefas[], char *linhaComandoTes);
 void retiraN(char *str);
 int abrirArquivo(char *nomeArq,FILE **arq);
 int montarPrograma(Programa *programa,char *nomePrograma);
-//Retorna o numero de instruções lidas pelo arquivo
+//Lê um arquivo LPAS e retorna o numero de instruções lidas
 unsigned short lerArquivoLPAS(Instrucao instrucoes[TAMANHO_INSTRUCAO],FILE *arquivo);
 pid_t criarProcesso();
-int executarTarefas(Tarefa tarefas[],int numTarefas);
+//Função na qual as tarefas passadas por parematros são executadas
+int executarTarefas(Tarefa tarefas[],int numTarefas,char *nomeProcesso);
 void inicializaDescritorDeTarefa(DescritorTarefa *df,Tarefa *tarefa);
+//Retorna o código da instrução passada por parametro caso seja valida e um erro caso seja inválida
 int decodificaInstrucao(Instrucao instrucao,char nomeVar[TAMANHO_INSTRUCAO]);
 int executarInstrucao(int cod,char nomeVar[TAMANHO_INSTRUCAO],MaquinaExecucao *me);
+//Verifica se uma variavel existe no vetor passado por parametro retorna sua posição caso exista e -1 caso contrário
 int verificaVariavel(char nomeVar[TAMANHO_INSTRUCAO],Variavel variavies[NUMERO_MAXIMO_DE_VARIAVEIS],int tam);
+//Cria uma variavel no descritor passado por parametro
 int criarVariavel(char nomeVar[TAMANHO_INSTRUCAO],DescritorTarefa *df);
+//Efetua a leitura de um valor inteiro
 int funcaoReadLpas();
+//Exibe na tela o valor passado como parametro
 void funcaoWriteLpas(int valor);
-void funcaoAddLpas(int *registrador,int valor);
 void funcaoLoadLpas(int *registrador,int valor);
 void funcaoStoreLpas(int *variavel, int registrador);
+//Soma o parametro valor ao parametro registrador
 void funcaoAddLpas(int *registrador,int valor);
+//Subitrai o parametro valor do parametro registrador
 void funcaoSubLpas(int *registrador,int valor);
+//Multiplica o parametro registrador pelo parametro valor
 void funcaoMulLpas(int *registrador,int valor);
+//Divide o parametro registrador pelo parametro valor
 void funcaoDivLpas(int *registrador,int valor);
+//Exibe na tela o relatório de erros
 void printaErro(char *nomePrograma,int erro);
+//Finaliza uma tarefa da maquina de execução
 void finalizaTarefa(MaquinaExecucao *me);
-int temFila(MaquinaExecucao *me);
-int escalonarTarefas(MaquinaExecucao *me);
+//Verifica se há alguma tarefa aguardando para ser executada na maquina de execução
+int temFila(MaquinaExecucao *me,int numTarefas);
+//Troca de posição a terafa 1 com a 2
+int escalonarTarefas(MaquinaExecucao *me,int numTarefas);
+//Exibe na tela o relatório do processo
+void printaRelatorio(MaquinaExecucao me,char *nomeProcesso);
