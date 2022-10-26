@@ -178,18 +178,21 @@ pid_t criarProcesso() {
 int executarTarefas(Tarefa tarefas[],int numTarefas,char *nomeProcesso){
     
     MaquinaExecucao me;
-    int cod,erro,fatiaTempo;
+    int cod,erro,fatiaTempo,tempototal=0;
     char nomeVar[TAMANHO_INSTRUCAO];
     me.numeroDeProgramas = numTarefas;
     for(int i = 0 ; i < me.numeroDeProgramas ; i++)
         inicializaDescritorDeTarefa(&me.df[i],&tarefas[i]);
-
+    
+    
     me.df[0].estado = EXECUTANDO;
     while (me.numeroDeProgramas > 0){
-        for (fatiaTempo = 2 ; fatiaTempo > 0 ; fatiaTempo--){
+        for (fatiaTempo = 2 ; fatiaTempo > 0 ; fatiaTempo-- , tempototal++){
             cod = decodificaInstrucao(me.df[0].tarefa.programa.instrucoes[me.df[0].pc],nomeVar);
             if(cod==HALT){
                 me.df[0].tempoCPU++;
+                if(temFila(&me,numTarefas))
+                    me.df[1].tempoEspera++;
                 finalizaTarefa(&me);
                 if(me.numeroDeProgramas>0){
                     escalonarTarefas(&me,numTarefas);
@@ -209,6 +212,9 @@ int executarTarefas(Tarefa tarefas[],int numTarefas,char *nomeProcesso){
             erro = executarInstrucao(cod,nomeVar,&me);
             me.df[0].pc++;
             me.df[0].tempoCPU++;
+            if(temFila(&me,numTarefas))
+                me.df[1].tempoEspera++;
+
             if(erro){
                 printaErro(me.df[0].tarefa.programa.nome,erro);
                 finalizaTarefa(&me);
@@ -246,6 +252,7 @@ void inicializaDescritorDeTarefa(DescritorTarefa *df,Tarefa *tarefa){
     df->pc = 0;
     df->tempoCPU = 0;
     df->tempoES = 0;
+    df->tempoEspera = 0;
     df->valorRegistrador = 0;
     df->numVariavel = 0;
     df->estado = PRONTA;
@@ -501,21 +508,23 @@ int escalonarTarefas(MaquinaExecucao *me,int numTarefas){
 }
 
 void printaRelatorio(MaquinaExecucao me,char *nomeProcesso){
-    float tempoTotalCPU=0;
+    float tempoTotalCPU=0,tempoTotalEspera=0;
 
-    for(int i=0 ; i<me.numeroDeProgramas ; i++)
+    for(int i=0 ; i<me.numeroDeProgramas ; i++){
         tempoTotalCPU += me.df[i].tempoCPU;
+        tempoTotalEspera+=me.df[i].tempoEspera;
+    }
     
     printf("\nProcesso: %s\n",nomeProcesso);
     for(int i=0; i< me.numeroDeProgramas;i++){
         printf("\n\n\t-Tarefa: %s.lpas",me.df[i].tarefa.programa.nome);
-        printf("\n\tTempo de CPU = ut%d",me.df[i].tempoCPU);
-        printf("\n\tTempo de E/S = ut%d",me.df[i].tempoES);
+        printf("\n\tTempo de CPU = %d ut",me.df[i].tempoCPU);
+        printf("\n\tTempo de E/S = %d ut",me.df[i].tempoES);
         printf("\n\tTaxa de ocupação da CPU = %.2f %%\n",me.df[i].tempoCPU * 100 / tempoTotalCPU);
     }
 
     printf("\n\t-Round-Robin");
-    printf("\n\tTempo médio de execução = ut");
-    printf("\n\tTempo médio de espera = ut");
+    printf("\n\tTempo médio de execução = %.2f ut",(tempoTotalCPU+tempoTotalEspera)/me.numeroDeProgramas);
+    printf("\n\tTempo médio de espera = %.2f ut",tempoTotalEspera/me.numeroDeProgramas);
 
 }
