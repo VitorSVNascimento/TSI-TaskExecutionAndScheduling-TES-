@@ -524,7 +524,7 @@ void printaRelatorio(MaquinaExecucao me,char *nomeProcesso){
     }
 
     printf("\n\t-Round-Robin");
-    printf("\n\tTempo médio de execução = %.2f ut",(tempoTotalCPU+tempoTotalEspera)/me.numeroDeProgramas);
-    printf("\n\tTempo médio de espera = %.2f ut",tempoTotalEspera/me.numeroDeProgramas);
+    printf("\n\tTempo médio de execução = %.2f s",tempoTotalCPU/me.numeroDeProgramas);
+    printf("\n\tTempo médio de espera = %.2f s",tempoTotalEspera/me.numeroDeProgramas);
 
 }
